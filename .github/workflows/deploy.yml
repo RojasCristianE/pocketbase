@@ -1,0 +1,62 @@
+name: Staging CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, staging ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-lint:
+    name: Test and Lint Go Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Install Dependencies
+        run: go mod download
+
+      - name: Verify Code Formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted. Run gofmt -w ."
+            exit 1
+          fi
+
+      - name: Build Application Test
+        run: go build -v ./...
+
+  build-and-deploy:
+    name: Build Docker Image & Deploy to Staging
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' # Only deploy on direct push to main/staging
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # --- DESPLIEGUE A STAGING (Ejemplo de simulación) ---
+      # En una sesión en vivo, aquí puedes mostrar a los alumnos cómo
+      # autenticar contra Docker Hub, GitHub Container Registry, o CLIs como Railway/Fly.io.
+      - name: Build Docker Image
+        run: |
+          echo "Simulando construcción de la imagen de producción..."
+          docker build -t pocketbase-app:staging .
+
+      - name: Deploy to Staging Server
+        run: |
+          echo "Conectando al servidor VPS de Staging..."
+          echo "Desplegando contenedor con la versión ${{ github.sha }}..."
+          # Ejemplo de comando SSH real:
+          # ssh -o StrictHostKeyChecking=no user@staging-vps.com "docker pull registry.com/pb:latest && docker-compose up -d"
+          echo "✅ Despliegue completado exitosamente en Staging!"
